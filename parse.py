@@ -2,9 +2,6 @@
 
 import re, glob, shutil
 
-binout = open("centerlines.bin", "wb")
-descout = open("knots.coffee", "w")
-
 briggs = re.compile("^[0-9]+\.[0-9]+(\.[0-9]+)?$")
 coord = re.compile("^(\-?\d+(\.\d*)?)\s(\-?\d+(\.\d*)?)\s(\-?\d+(\.\d*)?)$")
 separator = re.compile("^$")
@@ -41,9 +38,6 @@ for html in glob.glob("*.html"):
     files[name] = html
     infile.close()
 
-#print "8.20 = ", links["8.20"], files["8.20"]
-#print "8.3.2 = ", links["8.3.2"], files["8.3.2"]
-
 # We want 9 columns, 12 rows:
 
 tableDesc = """
@@ -71,6 +65,10 @@ tableDesc = """
 """
 table = tableDesc.split('--')
 
+descout = open("knots.coffee", "w")
+descout.write("root = exports ? this\n\n")
+descout.write("root.links = [\n")
+vertCount, linkCount = 0, 0
 for numComponents in xrange(1, 4):
     for link in table[numComponents-1].strip().split('\n'):
         crossings, count = map(int, link.split())
@@ -81,6 +79,23 @@ for numComponents in xrange(1, 4):
                 key = "%d.%d" % (crossings, index)
             if not key in links:
                 print key, "missing"
+                descout.write('  ["%s"]\n' % key)
                 continue
-            print key, links[key], files[key]
-#            shutil.copyfile(files[key], './good/' + files[key])
+            linkData = ', '.join(str(x) for x in links[key])
+            descout.write('  ["%s", %s]\n' % (key, linkData))
+            linkCount = linkCount + 1
+
+descout.write("]\n")
+print linkCount, "links dumped to knots.coffee"
+
+binout = open("centerlines.bin", "wb")
+import ctypes, struct
+s = struct.Struct('fff')
+vertCount = len(coords)
+b = ctypes.create_string_buffer(s.size * vertCount)
+offset = 0
+for c in coords:
+    s.pack_into(b, offset, *c)
+    offset = offset + 12
+binout.write(b)
+print vertCount, "verts dumped to centerlines.bin"
