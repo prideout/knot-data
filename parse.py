@@ -19,8 +19,8 @@ for html in glob.glob("*.html"):
         m = coord.match(line)
         if m:
             x = float(m.group(1))
-            y = float(m.group(2))
-            z = float(m.group(3))
+            y = float(m.group(3))
+            z = float(m.group(5))
             coords.append((x,y,z))
         elif briggs.match(line):
             name = line.strip()
